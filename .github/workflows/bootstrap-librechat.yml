@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   bootstrap:
-    if: ${{ !hashFiles('.xboss-librechat-ready') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Xboss123
@@ -18,29 +17,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch LibreChat
+      - name: Bootstrap LibreChat once
+        shell: bash
         run: |
+          set -euo pipefail
+
+          if [ -f .xboss-librechat-ready ]; then
+            echo "Xboss123 is already bootstrapped."
+            exit 0
+          fi
+
           git clone --depth 1 --branch v0.8.8-rc3 https://github.com/danny-avila/LibreChat.git /tmp/librechat
           rm -rf /tmp/librechat/.git
 
-      - name: Install LibreChat as the app base
-        run: |
           find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
           cp -a /tmp/librechat/. .
+
           cat > XBOSS.md <<'EOF'
-          # Xboss123
+# Xboss123
 
-          Xboss123 uses the current LibreChat application as its UI and agent foundation.
+Xboss123 uses LibreChat as the UI and agent foundation.
 
-          Target integration:
-          - Puter as the model/runtime provider
-          - MCP tool discovery and execution
-          - GitHub coding tools
-          - Autonomous Boss loop: analyze -> act -> observe -> repair -> verify
-          - Evidence-gated completion
+Target integration:
+- Puter as the model/runtime provider
+- MCP tool discovery and execution
+- GitHub coding tools
+- Autonomous Boss loop: analyze -> act -> observe -> repair -> verify
+- Evidence-gated completion
 
-          This repository intentionally keeps the upstream LibreChat architecture instead of rebuilding a ChatGPT-style UI from scratch.
-          EOF
+This repository keeps the upstream LibreChat architecture instead of rebuilding a ChatGPT-style UI from scratch.
+EOF
+
           cat > librechat.yaml <<'EOF'
 version: 1.0.8
 
@@ -60,16 +67,16 @@ endpoints:
         - "stop"
 EOF
 
-          cat >> .env.example <<'EOF'
+          if ! grep -q '^PUTER_AUTH_TOKEN=' .env.example 2>/dev/null; then
+            cat >> .env.example <<'EOF'
 
 # Puter OpenAI-compatible AI endpoint
 PUTER_AUTH_TOKEN=
 EOF
+          fi
 
           touch .xboss-librechat-ready
 
-      - name: Commit bootstrapped app
-        run: |
           git config user.name "Xboss123 Bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
