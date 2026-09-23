@@ -41,6 +41,31 @@ jobs:
 
           This repository intentionally keeps the upstream LibreChat architecture instead of rebuilding a ChatGPT-style UI from scratch.
           EOF
+          cat > librechat.yaml <<'EOF'
+version: 1.0.8
+
+endpoints:
+  custom:
+    - name: "Puter"
+      apiKey: "${PUTER_AUTH_TOKEN}"
+      baseURL: "https://api.puter.com/puterai/openai/v1/"
+      models:
+        default:
+          - "gpt-5.6-luna"
+        fetch: true
+      titleConvo: true
+      titleModel: "gpt-5.6-luna"
+      modelDisplayLabel: "Puter"
+      dropParams:
+        - "stop"
+EOF
+
+          cat >> .env.example <<'EOF'
+
+# Puter OpenAI-compatible AI endpoint
+PUTER_AUTH_TOKEN=
+EOF
+
           touch .xboss-librechat-ready
 
       - name: Commit bootstrapped app
