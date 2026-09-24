@@ -35,17 +35,15 @@ jobs:
           # the one-time bootstrap and does not depend on an image asset.
           python3 - <<'PY'
           from pathlib import Path
-          import html
-
+          
           candidates = list(Path("client").rglob("index.html")) + list(Path(".").rglob("index.html"))
           target = next((p for p in candidates if p.is_file()), None)
-          if not target:
+          if target is None:
               raise SystemExit("No index.html found after LibreChat bootstrap")
-
+          
           text = target.read_text(encoding="utf-8")
           marker = "<!-- XBOSS-TYPO-HERO -->"
-          if marker not in text:
-              payload = r'''<!-- XBOSS-TYPO-HERO -->
+          payload = r'''<!-- XBOSS-TYPO-HERO -->
           <style>
           .xboss-hero-type{display:grid;place-items:center;min-height:clamp(180px,28vw,360px);padding:28px 24px;box-sizing:border-box;position:relative;overflow:hidden;border-radius:28px;background:radial-gradient(circle at 50% 35%,rgba(184,140,255,.16),transparent 58%),linear-gradient(135deg,rgba(255,255,255,.035),rgba(255,255,255,.01));}
           .xboss-hero-type::before{content:"";position:absolute;inset:12%;border:1px solid rgba(255,255,255,.08);border-radius:24px;transform:rotate(-2deg);}
@@ -62,7 +60,14 @@ jobs:
             if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
           })();
           </script>'''
-              text = text.replace("</head>", payload + "\\n</head>", 1) if "</head>" in text else text.replace("</body>", payload + "\\n</body>", 1)
+          if marker not in text:
+              insertion = payload + "\n"
+              if "</head>" in text:
+                  text = text.replace("</head>", insertion + "</head>", 1)
+              elif "</body>" in text:
+                  text = text.replace("</body>", insertion + "</body>", 1)
+              else:
+                  text += insertion
               target.write_text(text, encoding="utf-8")
           PY
           cat > XBOSS.md <<'EOF'
