@@ -81,6 +81,9 @@ Xboss123 uses LibreChat as the UI and agent foundation.
 EOF
           cat > librechat.yaml <<'EOF'
 version: 1.0.8
+
+# BOSSNU: Puter remains the primary model endpoint.
+# Live-data questions use the built-in agent web search.
 endpoints:
   custom:
     - name: "Puter"
@@ -95,6 +98,58 @@ endpoints:
       modelDisplayLabel: "Puter"
       dropParams:
         - "stop"
+  agents:
+    capabilities:
+      - deferred_tools
+      - execute_code
+      - file_search
+      - web_search
+      - artifacts
+      - subagents
+      - actions
+      - context
+      - skills
+      - memory
+      - ask_user_question
+      - tools
+      - chain
+      - ocr
+
+# Keyless web search + page fetch. No extra API key is required.
+webSearch:
+  searchProvider: "keenable"
+  scraperProvider: "keenable"
+  rerankerType: "none"
+  keenableSearchOptions:
+    maxResults: 8
+    timeout: 15000
+  keenableScraperOptions:
+    timeout: 15000
+  safeSearch: 1
+  scraperTimeout: 10000
+
+interface:
+  webSearch: true
+
+# Default Boss profile: Puter model + automatic live web lookup.
+modelSpecs:
+  prioritize: false
+  list:
+    - name: "boss-live"
+      label: "BOSS • Live"
+      default: true
+      description: "Puter-first Boss with automatic live web lookup for current facts."
+      webSearch: true
+      artifacts: true
+      preset:
+        endpoint: "Puter"
+        model: "gpt-5.6-luna"
+        promptPrefix: |
+          You are BOSSNU. For time-sensitive factual questions, do not rely on memory alone.
+          Use web search before answering. For Thai gold prices, prefer the Gold Traders Association
+          (สมาคมค้าทองคำ) as the primary source, then cross-check a reputable Thai source when available.
+          Always state the source time/date when the price can change during the day.
+          Never invent a live price.
 EOF
           if ! grep -q '^PUTER_AUTH_TOKEN=' .env.example 2>/dev/null; then
             printf '\n# Puter OpenAI-compatible AI endpoint\nPUTER_AUTH_TOKEN=\n' >> .env.example
